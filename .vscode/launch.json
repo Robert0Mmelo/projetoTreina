@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-ProjetotreinaApplication<projetotreina>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.curriculo.projetotreina.ProjetotreinaApplication",
+            "projectName": "projetotreina",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
