@@ -3,10 +3,12 @@ package com.curriculo.projetotreina.model;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 // import org.hibernate.annotations.Type;
+import lombok.Setter;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Data
 @Entity
@@ -14,11 +16,13 @@ import javax.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "Images")
+@Getter
+@Setter
 public class Image {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    private Long id;
+    private Integer id;
 
     private String name;
 
