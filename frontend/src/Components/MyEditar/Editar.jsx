@@ -1,8 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 
 function Editar() {
+  // -----------------------------
+  // 1. Estados Gerais
+  // -----------------------------
+  const [existe, setExiste] = useState(false);
 
+  // Identificação
   const [identificacao, setIdentificacao] = useState({
     nome: "",
     telefone: "",
@@ -11,34 +16,7 @@ function Editar() {
   });
   const [fotoFile, setFotoFile] = useState(null);
 
-  const handleChangeIdentificacao = (e) => {
-    const { name, type, checked, value } = e.target;
-    setIdentificacao((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  const handleUploadFoto = async () => {
-    if (!fotoFile) return;
-    const formData = new FormData();
-    formData.append("file", fotoFile);
-    try {
-
-      const response = await axios.post("http://localhost:8080/api/images/upload", formData);
-     
-      setIdentificacao((prev) => ({
-        ...prev,
-        fotoPerfil: response.data.url,
-      }));
-      alert("Foto enviada com sucesso!");
-    } catch (error) {
-      console.error("Erro no upload da foto:", error);
-      alert("Erro ao enviar foto.");
-    }
-  };
-
-
+  // Endereço
   const [endereco, setEndereco] = useState({
     cep: "",
     rua: "",
@@ -48,22 +26,133 @@ function Editar() {
     uf: "",
   });
 
+  // Formações (arrays)
+  const [graduacoes, setGraduacoes] = useState([]);
+  const [posgraduacoes, setPosgraduacoes] = useState([]);
+  const [tecnicos, setTecnicos] = useState([]);
+
+  // Experiência: cada empresa terá também um campo "isAtuais" para marcar fim como "Atualmente"
+  const [semExperiencia, setSemExperiencia] = useState(false);
+  const [empresas, setEmpresas] = useState([
+    {
+      nome: "",
+      inicio: null,
+      fim: "",
+      isAtuais: false, // novo campo para empresa
+      funcoes: [
+        { nome: "", inicio: null, fim: "", isAtualmente: false },
+      ],
+    },
+  ]);
+
+  // Informações Adicionais
+  const [informacoesAdc, setInformacoesAdc] = useState({
+    linkedin: "",
+    github: "",
+    instagram: "",
+    email: "",
+  });
+
+  // -----------------------------
+  // 2. Carregar Dados do Currículo (ID=1)
+  // -----------------------------
+  useEffect(() => {
+    axios.get("http://localhost:8080/api/curriculo/1")
+      .then((response) => {
+        if (response.status === 200) {
+          setExiste(true);
+          const data = response.data;
+          setIdentificacao(data.identificacao || {});
+          setEndereco(data.endereco || {});
+          setEmpresas(
+            (data.empresas || []).map((empresa) => ({
+              ...empresa,
+              inicio: empresa.inicio ? new Date(empresa.inicio) : null,
+              // Se o backend enviar "fim" já como string, mantém
+              funcoes: (empresa.funcoes || []).map((f) => ({
+                ...f,
+                inicio: f.inicio ? new Date(f.inicio) : null,
+              })),
+            }))
+          );
+          setInformacoesAdc(data.informacoesAdc || {});
+          if (data.formacoes) {
+            setGraduacoes(
+              (data.formacoes.graduacoes || []).map((g) => ({
+                ...g,
+                inicio: g.inicio ? new Date(g.inicio) : null,
+              }))
+            );
+            setPosgraduacoes(
+              (data.formacoes.posgraduacoes || []).map((p) => ({
+                ...p,
+                inicio: p.inicio ? new Date(p.inicio) : null,
+              }))
+            );
+            setTecnicos(
+              (data.formacoes.tecnicos || []).map((t) => ({
+                ...t,
+                inicio: t.inicio ? new Date(t.inicio) : null,
+              }))
+            );
+          }
+        }
+      })
+      .catch((error) => {
+        if (error.response && error.response.status === 404) {
+          setExiste(false);
+          console.log("Currículo com ID=1 não existe. Criando novo.");
+        } else {
+          console.error("Erro ao carregar o currículo:", error);
+        }
+      });
+  }, []);
+
+  // -----------------------------
+  // 3. Manipulação de Dados
+  // -----------------------------
+
+  // IDENTIFICAÇÃO
+  const handleChangeIdentificacao = (e) => {
+    const { name, type, checked, value } = e.target;
+    setIdentificacao((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleUploadFoto = async () => {
+  if (!fotoFile) return;
+  const formData = new FormData();
+  formData.append("file", fotoFile);
+  try {
+    const response = await axios.post("http://localhost:8080/api/images/upload", formData);
+    // Atualiza o campo fotoPerfil de Identificacao
+    setIdentificacao((prev) => ({
+      ...prev,
+      fotoPerfil: response.data.url,
+    }));
+    // Atualiza a chave para forçar o refresh no Avatar
+    window.localStorage.setItem("avatarRefresh", new Date().getTime());
+    alert("Foto enviada com sucesso!");
+  } catch (error) {
+    console.error("Erro ao enviar foto:", error);
+    alert("Erro ao enviar foto.");
+  }
+};
+
+
+  // ENDEREÇO
   const handleChangeEndereco = (e) => {
     const { name, value } = e.target;
-    setEndereco((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setEndereco((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleCepBlur = () => {
     if (!endereco.cep) return;
-    fetch(`http://localhost:8080/api/enderecos/cep/${endereco.cep}`)
+    axios.get(`http://localhost:8080/api/enderecos/cep/${endereco.cep}`)
       .then((res) => {
-        if (!res.ok) throw new Error("CEP inválido ou erro na API");
-        return res.json();
-      })
-      .then((data) => {
+        const data = res.data;
         setEndereco((prev) => ({
           ...prev,
           rua: data.logradouro || "",
@@ -75,11 +164,7 @@ function Editar() {
       .catch((err) => console.error("Erro ao buscar CEP:", err));
   };
 
-
-  const [graduacoes, setGraduacoes] = useState([]);
-  const [posgraduacoes, setPosgraduacoes] = useState([]);
-  const [tecnicos, setTecnicos] = useState([]);
-
+  // FORMAÇÕES - Graduação
   const addGraduacao = () => {
     setGraduacoes((prev) => [
       ...prev,
@@ -87,8 +172,8 @@ function Editar() {
     ]);
   };
 
-  const updateGraduacao = (index, e) => {
-    const { name, value, type, checked } = e.target;
+  const handleChangeGraduacao = (index, e) => {
+    const { name, value,type, checked } = e.target;
     setGraduacoes((prev) => {
       const newArr = [...prev];
       if (type === "checkbox") {
@@ -109,6 +194,7 @@ function Editar() {
     setGraduacoes((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // FORMAÇÕES - Pós-Graduação
   const addPosgraduacao = () => {
     setPosgraduacoes((prev) => [
       ...prev,
@@ -116,7 +202,7 @@ function Editar() {
     ]);
   };
 
-  const updatePosgraduacao = (index, e) => {
+  const handleChangePosgraduacao = (index, e) => {
     const { name, value, type, checked } = e.target;
     setPosgraduacoes((prev) => {
       const newArr = [...prev];
@@ -138,6 +224,7 @@ function Editar() {
     setPosgraduacoes((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // FORMAÇÕES - Curso Técnico
   const addTecnico = () => {
     setTecnicos((prev) => [
       ...prev,
@@ -145,7 +232,7 @@ function Editar() {
     ]);
   };
 
-  const updateTecnico = (index, e) => {
+  const handleChangeTecnico = (index, e) => {
     const { name, value, type, checked } = e.target;
     setTecnicos((prev) => {
       const newArr = [...prev];
@@ -167,18 +254,7 @@ function Editar() {
     setTecnicos((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const [semExperiencia, setSemExperiencia] = useState(false);
-  const [empresas, setEmpresas] = useState([
-    {
-      nome: "",
-      inicio: null,
-      fim: "",
-      funcoes: [
-        { nome: "", inicio: null, fim: "", isAtualmente: false },
-      ],
-    },
-  ]);
-
+  // EXPERIÊNCIA - Empresas
   const toggleSemExperiencia = () => {
     setSemExperiencia((prev) => !prev);
     if (!semExperiencia) {
@@ -187,20 +263,24 @@ function Editar() {
           nome: "",
           inicio: null,
           fim: "",
+          isAtuais: false,
           funcoes: [{ nome: "", inicio: null, fim: "", isAtualmente: false }],
         },
       ]);
     }
   };
 
-  const handleChangeEmpresa = (index, e) => {
-    const { name, value } = e.target;
+  const handleChangeEmpresa = (empresaIndex, e) => {
+    const { name, value, checked } = e.target;
     setEmpresas((prev) => {
       const newArr = [...prev];
       if (name === "inicio") {
-        newArr[index][name] = value ? new Date(value) : null;
+        newArr[empresaIndex][name] = value ? new Date(value) : null;
+      } else if (name === "isAtuais") {
+        newArr[empresaIndex].isAtuais = checked;
+        newArr[empresaIndex].fim = checked ? "Atualmente" : "";
       } else {
-        newArr[index][name] = value;
+        newArr[empresaIndex][name] = value;
       }
       return newArr;
     });
@@ -209,19 +289,26 @@ function Editar() {
   const addEmpresa = () => {
     setEmpresas((prev) => [
       ...prev,
-      { nome: "", inicio: null, fim: "", funcoes: [{ nome: "", inicio: null, fim: "", isAtualmente: false }] },
+      {
+        nome: "",
+        inicio: null,
+        fim: "",
+        isAtuais: false,
+        funcoes: [{ nome: "", inicio: null, fim: "", isAtualmente: false }],
+      },
     ]);
   };
 
-  const removeEmpresa = (index) => {
-    setEmpresas((prev) => prev.filter((_, i) => i !== index));
+  const removeEmpresa = (empresaIndex) => {
+    setEmpresas((prev) => prev.filter((_, i) => i !== empresaIndex));
   };
 
+  // EXPERIÊNCIA - Funções dentro de uma Empresa
   const handleChangeFuncao = (empresaIndex, funcaoIndex, e) => {
     const { name, value, type, checked } = e.target;
     setEmpresas((prev) => {
-      const newEmpresas = [...prev];
-      const funcoes = [...newEmpresas[empresaIndex].funcoes];
+      const newArr = [...prev];
+      const funcoes = [...newArr[empresaIndex].funcoes];
       if (type === "checkbox") {
         funcoes[funcaoIndex].isAtualmente = checked;
         funcoes[funcaoIndex].fim = checked ? "Atualmente" : "";
@@ -232,179 +319,173 @@ function Editar() {
           funcoes[funcaoIndex][name] = value;
         }
       }
-      newEmpresas[empresaIndex].funcoes = funcoes;
-      return newEmpresas;
+      newArr[empresaIndex].funcoes = funcoes;
+      return newArr;
     });
   };
 
   const addFuncao = (empresaIndex) => {
     setEmpresas((prev) => {
-      const newEmpresas = [...prev];
-      newEmpresas[empresaIndex].funcoes.push({ nome: "", inicio: null, fim: "", isAtualmente: false });
-      return newEmpresas;
+      const newArr = [...prev];
+      newArr[empresaIndex].funcoes.push({ nome: "", inicio: null, fim: "", isAtualmente: false });
+      return newArr;
     });
   };
 
   const removeFuncao = (empresaIndex, funcaoIndex) => {
     setEmpresas((prev) => {
-      const newEmpresas = [...prev];
-      newEmpresas[empresaIndex].funcoes = newEmpresas[empresaIndex].funcoes.filter((_, i) => i !== funcaoIndex);
-      return newEmpresas;
+      const newArr = [...prev];
+      newArr[empresaIndex].funcoes = newArr[empresaIndex].funcoes.filter((_, i) => i !== funcaoIndex);
+      return newArr;
     });
   };
 
-  const [informacoesAdc, setInformacoesAdc] = useState({
-    linkedin: "",
-    github: "",
-    instagram: "",
-    email: "",
-  });
-
+  // INFORMAÇÕES ADICIONAIS
   const handleChangeInfoAdc = (e) => {
     const { name, value } = e.target;
-    setInformacoesAdc((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setInformacoesAdc((prev) => ({ ...prev, [name]: value }));
   };
 
+  // -----------------------------
+  // 9. Envio dos Dados: POST (se não existir) ou PUT (se existir)
+  // -----------------------------
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const payload = {
-      identificacao: {
-        ...identificacao,
-        whatsapp: identificacao.isWhatsApp,
-      },
-      endereco,
-      formacoes: {
-        graduacoes: graduacoes,
-        posgraduacoes: posgraduacoes,
-        tecnicos: tecnicos,
-      },
-      empresas: semExperiencia ? [] : empresas,
-      informacoesAdc,
+    const saveCurriculo = (fotoUrl = identificacao.fotoPerfil) => {
+      const payload = {
+        identificacao: {
+          ...identificacao,
+          whatsapp: identificacao.isWhatsApp,
+          fotoPerfil: fotoUrl,
+        },
+        endereco,
+        formacoes: {
+          graduacoes,
+          posgraduacoes,
+          tecnicos,
+        },
+        empresas: semExperiencia ? [] : empresas,
+        informacoesAdc,
+      };
+
+      if (existe) {
+        axios.put("http://localhost:8080/api/curriculo/1", payload)
+          .then((response) => {
+            console.log("Currículo atualizado:", response.data);
+            alert("Currículo atualizado!");
+          })
+          .catch((error) => {
+            console.error("Erro ao atualizar currículo:", error);
+            alert("Erro ao atualizar currículo.");
+          });
+      } else {
+        axios.post("http://localhost:8080/api/curriculo", payload)
+          .then((response) => {
+            console.log("Currículo criado:", response.data);
+            alert("Currículo criado!");
+            setExiste(true);
+          })
+          .catch((error) => {
+            console.error("Erro ao criar currículo:", error);
+            alert("Erro ao criar currículo.");
+          });
+      }
     };
 
-    fetch("http://localhost:8080/api/curriculo", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Erro ao salvar currículo");
-        return res.json();
-      })
-      .then((data) => {
-        console.log("Currículo salvo com sucesso:", data);
-        alert("Currículo salvo!");
-      })
-      .catch((error) => {
-        console.error("Erro ao salvar currículo:", error);
-        alert("Ocorreu um erro ao salvar.");
-      });
+    if (fotoFile) {
+      const formData = new FormData();
+      formData.append("file", fotoFile);
+      axios.post("http://localhost:8080/api/images/upload", formData)
+        .then((res) => {
+          const imageUrl = res.data.url;
+          // Atualiza o avatar para forçar o refresh (se usado no Navbar)
+          window.localStorage.setItem("avatarRefresh", new Date().getTime());
+          saveCurriculo(imageUrl);
+        })
+        .catch((err) => {
+          console.error("Erro no upload da foto:", err);
+          alert("Erro no upload da foto.");
+        });
+    } else {
+      saveCurriculo();
+    }
   };
+
+  // -----------------------------
+  // 10. Renderização
+  // -----------------------------
   return (
     <div style={{ marginTop: "80px", padding: "20px" }}>
       <h2>Editar Currículo</h2>
+      
+      {/* Seção para alterar a foto de perfil */}
+      <section>
+        <h4>Foto de Perfil</h4>
+        <input type="file" onChange={(e) => setFotoFile(e.target.files[0])} />
+        <button type="button" onClick={handleUploadFoto}>Upload Foto</button>
+        {identificacao.fotoPerfil && (
+          <div>
+            <img
+              src={identificacao.fotoPerfil}
+              alt="Avatar"
+              style={{ width: "60px", height: "60px", borderRadius: "50%", objectFit: "cover" }}
+            />
+          </div>
+        )}
+      </section>
+
       <form onSubmit={handleSubmit}>
+        {/* IDENTIFICAÇÃO */}
         <section>
           <h4>Identificação</h4>
           <div>
             <label>Nome:</label>
-            <input
-              type="text"
-              name="nome"
-              value={identificacao.nome}
-              onChange={handleChangeIdentificacao}
-            />
+            <input type="text" name="nome" value={identificacao.nome || ""} onChange={handleChangeIdentificacao} />
           </div>
           <div>
             <label>Telefone:</label>
-            <input
-              type="text"
-              name="telefone"
-              value={identificacao.telefone}
-              onChange={handleChangeIdentificacao}
-            />
+            <input type="text" name="telefone" value={identificacao.telefone || ""} onChange={handleChangeIdentificacao} />
             <label style={{ marginLeft: "10px" }}>
-              <input
-                type="checkbox"
-                name="isWhatsApp"
-                checked={identificacao.isWhatsApp}
-                onChange={handleChangeIdentificacao}
-              />
+              <input type="checkbox" name="isWhatsApp" checked={identificacao.isWhatsApp || false} onChange={handleChangeIdentificacao} />
               É WhatsApp?
             </label>
           </div>
-          <div>
-            <label>Foto de Perfil:</label>
-            <input type="file" onChange={(e) => setFotoFile(e.target.files[0])} />
-            <button type="button" onClick={handleUploadFoto}>Upload Foto</button>
-          </div>
         </section>
 
+        {/* ENDEREÇO */}
         <section>
           <h4>Endereço</h4>
           <div>
             <label>CEP:</label>
-            <input
-              type="text"
-              name="cep"
-              value={endereco.cep}
-              onChange={handleChangeEndereco}
-              onBlur={handleCepBlur}
-            />
+            <input type="text" name="cep" value={endereco.cep || ""} onChange={handleChangeEndereco} onBlur={handleCepBlur} />
           </div>
           <div>
             <label>Rua:</label>
-            <input
-              type="text"
-              name="rua"
-              value={endereco.rua}
-              onChange={handleChangeEndereco}
-            />
+            <input type="text" name="rua" value={endereco.rua || ""} onChange={handleChangeEndereco} />
           </div>
           <div>
             <label>Bairro:</label>
-            <input
-              type="text"
-              name="bairro"
-              value={endereco.bairro}
-              onChange={handleChangeEndereco}
-            />
+            <input type="text" name="bairro" value={endereco.bairro || ""} onChange={handleChangeEndereco} />
           </div>
           <div>
             <label>Número:</label>
-            <input
-              type="text"
-              name="numero"
-              value={endereco.numero}
-              onChange={handleChangeEndereco}
-            />
+            <input type="text" name="numero" value={endereco.numero || ""} onChange={handleChangeEndereco} />
           </div>
           <div>
             <label>Cidade:</label>
-            <input
-              type="text"
-              name="cidade"
-              value={endereco.cidade}
-              onChange={handleChangeEndereco}
-            />
+            <input type="text" name="cidade" value={endereco.cidade || ""} onChange={handleChangeEndereco} />
           </div>
           <div>
             <label>UF:</label>
-            <input
-              type="text"
-              name="uf"
-              value={endereco.uf}
-              onChange={handleChangeEndereco}
-            />
+            <input type="text" name="uf" value={endereco.uf || ""} onChange={handleChangeEndereco} />
           </div>
         </section>
 
+        {/* FORMAÇÕES */}
         <section>
           <h4>Formações</h4>
+          {/* GRADUAÇÃO */}
           <div>
             <button type="button" onClick={addGraduacao}>Adicionar Graduação</button>
             {graduacoes.map((grad, index) => (
@@ -415,8 +496,12 @@ function Editar() {
                   <input
                     type="date"
                     name="inicio"
-                    value={grad.inicio ? grad.inicio.toISOString().split("T")[0] : ""}
-                    onChange={(e) => updateGraduacao(index, e)}
+                    value={
+                      grad.inicio && typeof grad.inicio.toISOString === "function"
+                        ? grad.inicio.toISOString().split("T")[0]
+                        : ""
+                    }
+                    onChange={(e) => handleChangeGraduacao(index, e)}
                   />
                 </div>
                 <div>
@@ -426,7 +511,7 @@ function Editar() {
                     name="fim"
                     placeholder="Ex: 2022 ou Atuais"
                     value={grad.fim}
-                    onChange={(e) => updateGraduacao(index, e)}
+                    onChange={(e) => handleChangeGraduacao(index, e)}
                     disabled={grad.isEmAndamento}
                   />
                   <label style={{ marginLeft: "10px" }}>
@@ -434,33 +519,25 @@ function Editar() {
                       type="checkbox"
                       name="isEmAndamento"
                       checked={grad.isEmAndamento}
-                      onChange={(e) => updateGraduacao(index, e)}
+                      onChange={(e) => handleChangeGraduacao(index, e)}
                     />
                     Em andamento?
                   </label>
                 </div>
                 <div>
                   <label>Curso:</label>
-                  <input
-                    type="text"
-                    name="curso"
-                    value={grad.curso}
-                    onChange={(e) => updateGraduacao(index, e)}
-                  />
+                  <input type="text" name="curso" value={grad.curso} onChange={(e) => handleChangeGraduacao(index, e)} />
                 </div>
                 <div>
                   <label>Instituição (IES):</label>
-                  <input
-                    type="text"
-                    name="ise"
-                    value={grad.ise}
-                    onChange={(e) => updateGraduacao(index, e)}
-                  />
+                  <input type="text" name="ies" value={grad.ies} onChange={(e) => handleChangeGraduacao(index, e)} />
                 </div>
                 <button type="button" onClick={() => removeGraduacao(index)}>Remover Graduação</button>
               </div>
             ))}
           </div>
+          
+          {/* PÓS-GRADUAÇÃO */}
           <div>
             <button type="button" onClick={addPosgraduacao}>Adicionar Pós-Graduação</button>
             {posgraduacoes.map((pos, index) => (
@@ -471,8 +548,12 @@ function Editar() {
                   <input
                     type="date"
                     name="inicio"
-                    value={pos.inicio ? pos.inicio.toISOString().split("T")[0] : ""}
-                    onChange={(e) => updatePosgraduacao(index, e)}
+                    value={
+                      pos.inicio && typeof pos.inicio.toISOString === "function"
+                        ? pos.inicio.toISOString().split("T")[0]
+                        : ""
+                    }
+                    onChange={(e) => handleChangePosgraduacao(index, e)}
                   />
                 </div>
                 <div>
@@ -482,7 +563,7 @@ function Editar() {
                     name="fim"
                     placeholder="Ex: 2022 ou Atuais"
                     value={pos.fim}
-                    onChange={(e) => updatePosgraduacao(index, e)}
+                    onChange={(e) => handleChangePosgraduacao(index, e)}
                     disabled={pos.isEmAndamento}
                   />
                   <label style={{ marginLeft: "10px" }}>
@@ -490,36 +571,22 @@ function Editar() {
                       type="checkbox"
                       name="isEmAndamento"
                       checked={pos.isEmAndamento}
-                      onChange={(e) => updatePosgraduacao(index, e)}
+                      onChange={(e) => handleChangePosgraduacao(index, e)}
                     />
                     Em andamento?
                   </label>
                 </div>
                 <div>
                   <label>Curso:</label>
-                  <input
-                    type="text"
-                    name="curso"
-                    value={pos.curso}
-                    onChange={(e) => updatePosgraduacao(index, e)}
-                  />
+                  <input type="text" name="curso" value={pos.curso} onChange={(e) => handleChangePosgraduacao(index, e)} />
                 </div>
                 <div>
                   <label>Instituição (IE):</label>
-                  <input
-                    type="text"
-                    name="ie"
-                    value={pos.ie}
-                    onChange={(e) => updatePosgraduacao(index, e)}
-                  />
+                  <input type="text" name="ie" value={pos.ie} onChange={(e) => handleChangePosgraduacao(index, e)} />
                 </div>
                 <div>
                   <label>Título:</label>
-                  <select
-                    name="titulo"
-                    value={pos.titulo}
-                    onChange={(e) => updatePosgraduacao(index, e)}
-                  >
+                  <select name="titulo" value={pos.titulo} onChange={(e) => handleChangePosgraduacao(index, e)}>
                     <option value="MBA">MBA</option>
                     <option value="ESPECIALIZACAO">Especialização</option>
                     <option value="MESTRADO">Mestrado</option>
@@ -531,6 +598,8 @@ function Editar() {
               </div>
             ))}
           </div>
+
+          {/* TÉCNICO */}
           <div>
             <button type="button" onClick={addTecnico}>Adicionar Curso Técnico</button>
             {tecnicos.map((tec, index) => (
@@ -541,8 +610,12 @@ function Editar() {
                   <input
                     type="date"
                     name="inicio"
-                    value={tec.inicio ? tec.inicio.toISOString().split("T")[0] : ""}
-                    onChange={(e) => updateTecnico(index, e)}
+                    value={
+                      tec.inicio && typeof tec.inicio.toISOString === "function"
+                        ? tec.inicio.toISOString().split("T")[0]
+                        : ""
+                    }
+                    onChange={(e) => handleChangeTecnico(index, e)}
                   />
                 </div>
                 <div>
@@ -552,7 +625,7 @@ function Editar() {
                     name="fim"
                     placeholder="Ex: 2022 ou Atuais"
                     value={tec.fim}
-                    onChange={(e) => updateTecnico(index, e)}
+                    onChange={(e) => handleChangeTecnico(index, e)}
                     disabled={tec.isEmAndamento}
                   />
                   <label style={{ marginLeft: "10px" }}>
@@ -560,34 +633,26 @@ function Editar() {
                       type="checkbox"
                       name="isEmAndamento"
                       checked={tec.isEmAndamento}
-                      onChange={(e) => updateTecnico(index, e)}
+                      onChange={(e) => handleChangeTecnico(index, e)}
                     />
                     Em andamento?
                   </label>
                 </div>
                 <div>
                   <label>Curso:</label>
-                  <input
-                    type="text"
-                    name="curso"
-                    value={tec.curso}
-                    onChange={(e) => updateTecnico(index, e)}
-                  />
+                  <input type="text" name="curso" value={tec.curso} onChange={(e) => handleChangeTecnico(index, e)} />
                 </div>
                 <div>
                   <label>Instituição (IC):</label>
-                  <input
-                    type="text"
-                    name="ic"
-                    value={tec.ic}
-                    onChange={(e) => updateTecnico(index, e)}
-                  />
+                  <input type="text" name="ic" value={tec.ic} onChange={(e) => handleChangeTecnico(index, e)} />
                 </div>
                 <button type="button" onClick={() => removeTecnico(index)}>Remover Curso Técnico</button>
               </div>
             ))}
           </div>
         </section>
+
+        {/* EXPERIÊNCIA */}
         <section>
           <h4>Experiência</h4>
           <button type="button" onClick={toggleSemExperiencia}>
@@ -615,7 +680,11 @@ function Editar() {
                     <input
                       type="date"
                       name="inicio"
-                      value={empresa.inicio ? empresa.inicio.toISOString().split("T")[0] : ""}
+                      value={
+                        empresa.inicio && typeof empresa.inicio.toISOString === "function"
+                          ? empresa.inicio.toISOString().split("T")[0]
+                          : ""
+                      }
                       onChange={(e) => handleChangeEmpresa(empresaIndex, e)}
                     />
                     <label>Fim:</label>
@@ -626,6 +695,15 @@ function Editar() {
                       value={empresa.fim}
                       onChange={(e) => handleChangeEmpresa(empresaIndex, e)}
                     />
+                    <label style={{ marginLeft: "10px" }}>
+                      <input
+                        type="checkbox"
+                        name="isAtuais"
+                        checked={empresa.isAtuais || false}
+                        onChange={(e) => handleChangeEmpresa(empresaIndex, e)}
+                      />
+                      Em andamento?
+                    </label>
                   </div>
                   <h5>Funções</h5>
                   <button type="button" onClick={() => addFuncao(empresaIndex)}>Adicionar Função</button>
@@ -648,7 +726,7 @@ function Editar() {
                         <input
                           type="date"
                           name="inicio"
-                          value={funcao.inicio ? funcao.inicio.toISOString().split("T")[0] : ""}
+                          value={funcao.inicio && typeof funcao.inicio.toISOString === "function" ? funcao.inicio.toISOString().split("T")[0] : ""}
                           onChange={(e) => handleChangeFuncao(empresaIndex, funcaoIndex, e)}
                         />
                         <label>Fim:</label>
@@ -678,48 +756,29 @@ function Editar() {
           )}
         </section>
 
+        {/* INFORMAÇÕES ADICIONAIS */}
         <section>
           <h4>Informações Adicionais</h4>
           <div>
             <label>Linkedin:</label>
-            <input
-              type="text"
-              name="linkedin"
-              value={informacoesAdc.linkedin}
-              onChange={handleChangeInfoAdc}
-            />
+            <input type="text" name="linkedin" value={informacoesAdc.linkedin || ""} onChange={handleChangeInfoAdc} />
           </div>
           <div>
             <label>Github:</label>
-            <input
-              type="text"
-              name="github"
-              value={informacoesAdc.github}
-              onChange={handleChangeInfoAdc}
-            />
+            <input type="text" name="github" value={informacoesAdc.github || ""} onChange={handleChangeInfoAdc} />
           </div>
           <div>
             <label>Instagram:</label>
-            <input
-              type="text"
-              name="instagram"
-              value={informacoesAdc.instagram}
-              onChange={handleChangeInfoAdc}
-            />
+            <input type="text" name="instagram" value={informacoesAdc.instagram || ""} onChange={handleChangeInfoAdc} />
           </div>
           <div>
             <label>Email:</label>
-            <input
-              type="text"
-              name="email"
-              value={informacoesAdc.email}
-              onChange={handleChangeInfoAdc}
-            />
+            <input type="text" name="email" value={informacoesAdc.email || ""} onChange={handleChangeInfoAdc} />
           </div>
         </section>
 
         <button type="submit" style={{ marginTop: "20px" }}>
-          Salvar
+          {existe ? "Atualizar" : "Criar (POST)"}
         </button>
       </form>
     </div>
