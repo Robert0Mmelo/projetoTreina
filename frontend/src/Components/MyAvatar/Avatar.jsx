@@ -3,41 +3,38 @@ import axios from 'axios';
 import defaultAvatar from '../../assets/Avatar-Default.png';
 
 function Avatar() {
-  // Estado para armazenar o parâmetro de refresh
-  const [refresh, setRefresh] = useState(window.localStorage.getItem("avatarRefresh") || 0);
   const [avatarUrl, setAvatarUrl] = useState(defaultAvatar);
+  const [refresh, setRefresh] = useState(window.localStorage.getItem("avatarRefresh") || 0);
 
   useEffect(() => {
-    const fetchAvatar = () => {
-      axios.get(`http://localhost:8080/api/images/1?t=${refresh}`, { responseType: 'blob' })
-        .then(response => {
-          const imageUrl = URL.createObjectURL(response.data);
-          setAvatarUrl(imageUrl);
-        })
-        .catch(error => {
-          console.error('Erro ao buscar o avatar:', error);
-        });
-    };
+    const imageId = window.localStorage.getItem("avatarImageId") || "1";
+    axios.get(`http://localhost:8080/api/images/${imageId}`, { responseType: 'blob' })
+      .then(response => {
+        const url = URL.createObjectURL(response.data);
+        setAvatarUrl(url);
+      })
+      .catch(error => {
+        console.error('Erro ao buscar o avatar:', error);
+        setAvatarUrl(defaultAvatar);
+      });
+  }, [refresh]);
 
-    fetchAvatar();
-
-    // Listener para mudanças no localStorage
+  useEffect(() => {
     const handleStorageChange = (event) => {
       if (event.key === "avatarRefresh") {
         setRefresh(event.newValue);
       }
     };
-
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, [refresh]);
+  }, []);
 
   return (
     <div>
       <img 
         src={avatarUrl} 
         alt="Avatar" 
-        onError={(e) => e.target.src = defaultAvatar}
+        onError={(e) => { e.target.src = defaultAvatar; }}
         style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
       />
     </div>

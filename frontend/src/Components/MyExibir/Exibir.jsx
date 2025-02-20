@@ -6,15 +6,15 @@ import defaultAvatar from '../../assets/Avatar-Default.png';
 
 function Exibir() {
   const [curriculo, setCurriculo] = useState(null);
+  const [avatarUrl, setAvatarUrl] = useState(defaultAvatar);
+  const [refresh, setRefresh] = useState(window.localStorage.getItem("avatarRefresh") || 0);
 
+  // Carrega os dados do currículo (ID=1)
   useEffect(() => {
     axios.get('http://localhost:8080/api/curriculo/1')
       .then(response => {
-        // Converte os campos de data se necessário
         const data = response.data;
-        if (data.identificacao && data.identificacao.fotoPerfil) {
-          // Use a foto de perfil já salva
-        }
+        // Converte as datas para objetos Date, se necessário
         if (data.formacoes) {
           data.formacoes.graduacoes = (data.formacoes.graduacoes || []).map(g => ({
             ...g,
@@ -46,6 +46,31 @@ function Exibir() {
       });
   }, []);
 
+  // Carrega o avatar usando o ID salvo no localStorage (ignora fotoPerfil)
+  useEffect(() => {
+    const imageId = window.localStorage.getItem("avatarImageId") || "1";
+    axios.get(`http://localhost:8080/api/images/${imageId}?t=${refresh}`, { responseType: 'blob' })
+      .then(response => {
+        const url = URL.createObjectURL(response.data);
+        setAvatarUrl(url);
+      })
+      .catch(error => {
+        console.error('Erro ao buscar avatar:', error);
+        setAvatarUrl(defaultAvatar);
+      });
+  }, [refresh]);
+
+  // Atualiza refresh se a chave "avatarRefresh" mudar
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      if (event.key === "avatarRefresh") {
+        setRefresh(event.newValue);
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
   const handlePrint = () => {
     window.print();
   };
@@ -54,15 +79,15 @@ function Exibir() {
     return <div>Carregando currículo...</div>;
   }
 
-  // Desestruturação dos dados
+  // Desestruturação dos dados do currículo
   const { identificacao, endereco, formacoes, empresas, informacoesAdc } = curriculo;
 
   return (
     <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
-      {/* Cabeçalho com foto, nome e telefone */}
+      {/* Cabeçalho */}
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
         <img 
-          src={identificacao.fotoPerfil || defaultAvatar} 
+          src={avatarUrl} 
           alt="Avatar" 
           style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', marginRight: '20px' }} 
         />
@@ -79,8 +104,8 @@ function Exibir() {
       <section style={{ marginBottom: '20px' }}>
         <h2>Endereço</h2>
         <p>
-          {endereco.rua}, {endereco.numero} - {endereco.bairro} <br/>
-          {endereco.cidade} - {endereco.uf} <br/>
+          {endereco.rua}, {endereco.numero} - {endereco.bairro} <br />
+          {endereco.cidade} - {endereco.uf} <br />
           CEP: {endereco.cep}
         </p>
       </section>
@@ -95,7 +120,7 @@ function Exibir() {
                 <h3>Graduações</h3>
                 {formacoes.graduacoes.map((grad, i) => (
                   <div key={i} style={{ marginBottom: '10px' }}>
-                    <strong>{grad.curso}</strong> em {grad.ies} <br/>
+                    <strong>{grad.curso}</strong> em {grad.ies} <br />
                     Início: {grad.inicio ? grad.inicio.toLocaleDateString() : '-'} - Fim: {grad.fim || '-'}
                   </div>
                 ))}
@@ -106,7 +131,7 @@ function Exibir() {
                 <h3>Pós-Graduações</h3>
                 {formacoes.posgraduacoes.map((pos, i) => (
                   <div key={i} style={{ marginBottom: '10px' }}>
-                    <strong>{pos.curso}</strong> em {pos.ie} - {pos.titulo} <br/>
+                    <strong>{pos.curso}</strong> em {pos.ie} - {pos.titulo} <br />
                     Início: {pos.inicio ? pos.inicio.toLocaleDateString() : '-'} - Fim: {pos.fim || '-'}
                   </div>
                 ))}
@@ -117,7 +142,7 @@ function Exibir() {
                 <h3>Cursos Técnicos</h3>
                 {formacoes.tecnicos.map((tec, i) => (
                   <div key={i} style={{ marginBottom: '10px' }}>
-                    <strong>{tec.curso}</strong> em {tec.ic} <br/>
+                    <strong>{tec.curso}</strong> em {tec.ic} <br />
                     Início: {tec.inicio ? tec.inicio.toLocaleDateString() : '-'} - Fim: {tec.fim || '-'}
                   </div>
                 ))}

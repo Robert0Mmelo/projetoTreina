@@ -122,24 +122,26 @@ function Editar() {
   };
 
   const handleUploadFoto = async () => {
-  if (!fotoFile) return;
-  const formData = new FormData();
-  formData.append("file", fotoFile);
-  try {
-    const response = await axios.post("http://localhost:8080/api/images/upload", formData);
-    // Atualiza o campo fotoPerfil de Identificacao
-    setIdentificacao((prev) => ({
-      ...prev,
-      fotoPerfil: response.data.url,
-    }));
-    // Atualiza a chave para forçar o refresh no Avatar
-    window.localStorage.setItem("avatarRefresh", new Date().getTime());
-    alert("Foto enviada com sucesso!");
-  } catch (error) {
-    console.error("Erro ao enviar foto:", error);
-    alert("Erro ao enviar foto.");
-  }
-};
+    if (!fotoFile) return;
+    const formData = new FormData();
+    formData.append("file", fotoFile);
+    try {
+      const response = await axios.post("http://localhost:8080/api/images/upload", formData);
+      // Supondo que response.data.url retorne algo como "/api/images/3"
+      const imageUrl = response.data.url;
+      // Extraia o ID da imagem (última parte da URL)
+      const parts = imageUrl.split("/");
+      const newImageId = parts[parts.length - 1];
+      // Salve o novo ID e force o refresh
+      window.localStorage.setItem("avatarImageId", newImageId);
+      window.localStorage.setItem("avatarRefresh", new Date().getTime());
+      alert("Foto enviada com sucesso!");
+    } catch (error) {
+      console.error("Erro ao enviar foto:", error);
+      alert("Erro ao enviar foto.");
+    }
+  };
+  
 
 
   // ENDEREÇO
