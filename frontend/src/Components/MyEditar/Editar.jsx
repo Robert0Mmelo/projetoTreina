@@ -2,12 +2,8 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 
 function Editar() {
-  // -----------------------------
-  // 1. Estados Gerais
-  // -----------------------------
   const [existe, setExiste] = useState(false);
 
-  // Identificação
   const [identificacao, setIdentificacao] = useState({
     nome: "",
     telefone: "",
@@ -16,7 +12,6 @@ function Editar() {
   });
   const [fotoFile, setFotoFile] = useState(null);
 
-  // Endereço
   const [endereco, setEndereco] = useState({
     cep: "",
     rua: "",
@@ -26,26 +21,24 @@ function Editar() {
     uf: "",
   });
 
-  // Formações (arrays)
   const [graduacoes, setGraduacoes] = useState([]);
   const [posgraduacoes, setPosgraduacoes] = useState([]);
   const [tecnicos, setTecnicos] = useState([]);
 
-  // Experiência: cada empresa terá também um campo "isAtuais" para marcar fim como "Atualmente"
   const [semExperiencia, setSemExperiencia] = useState(false);
   const [empresas, setEmpresas] = useState([
     {
       nome: "",
       inicio: null,
       fim: "",
-      isAtuais: false, // novo campo para empresa
+      isAtuais: false,
       funcoes: [
         { nome: "", inicio: null, fim: "", isAtualmente: false },
       ],
     },
   ]);
 
-  // Informações Adicionais
+
   const [informacoesAdc, setInformacoesAdc] = useState({
     linkedin: "",
     github: "",
@@ -53,9 +46,6 @@ function Editar() {
     email: "",
   });
 
-  // -----------------------------
-  // 2. Carregar Dados do Currículo (ID=1)
-  // -----------------------------
   useEffect(() => {
     axios.get("http://localhost:8080/api/curriculo/1")
       .then((response) => {
@@ -68,7 +58,6 @@ function Editar() {
             (data.empresas || []).map((empresa) => ({
               ...empresa,
               inicio: empresa.inicio ? new Date(empresa.inicio) : null,
-              // Se o backend enviar "fim" já como string, mantém
               funcoes: (empresa.funcoes || []).map((f) => ({
                 ...f,
                 inicio: f.inicio ? new Date(f.inicio) : null,
@@ -108,11 +97,6 @@ function Editar() {
       });
   }, []);
 
-  // -----------------------------
-  // 3. Manipulação de Dados
-  // -----------------------------
-
-  // IDENTIFICAÇÃO
   const handleChangeIdentificacao = (e) => {
     const { name, type, checked, value } = e.target;
     setIdentificacao((prev) => ({
@@ -127,12 +111,9 @@ function Editar() {
     formData.append("file", fotoFile);
     try {
       const response = await axios.post("http://localhost:8080/api/images/upload", formData);
-      // Supondo que response.data.url retorne algo como "/api/images/3"
       const imageUrl = response.data.url;
-      // Extraia o ID da imagem (última parte da URL)
       const parts = imageUrl.split("/");
       const newImageId = parts[parts.length - 1];
-      // Salve o novo ID e force o refresh
       window.localStorage.setItem("avatarImageId", newImageId);
       window.localStorage.setItem("avatarRefresh", new Date().getTime());
       alert("Foto enviada com sucesso!");
@@ -142,9 +123,6 @@ function Editar() {
     }
   };
   
-
-
-  // ENDEREÇO
   const handleChangeEndereco = (e) => {
     const { name, value } = e.target;
     setEndereco((prev) => ({ ...prev, [name]: value }));
@@ -166,7 +144,6 @@ function Editar() {
       .catch((err) => console.error("Erro ao buscar CEP:", err));
   };
 
-  // FORMAÇÕES - Graduação
   const addGraduacao = () => {
     setGraduacoes((prev) => [
       ...prev,
@@ -196,7 +173,6 @@ function Editar() {
     setGraduacoes((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // FORMAÇÕES - Pós-Graduação
   const addPosgraduacao = () => {
     setPosgraduacoes((prev) => [
       ...prev,
@@ -226,7 +202,6 @@ function Editar() {
     setPosgraduacoes((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // FORMAÇÕES - Curso Técnico
   const addTecnico = () => {
     setTecnicos((prev) => [
       ...prev,
@@ -256,7 +231,6 @@ function Editar() {
     setTecnicos((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // EXPERIÊNCIA - Empresas
   const toggleSemExperiencia = () => {
     setSemExperiencia((prev) => !prev);
     if (!semExperiencia) {
@@ -305,7 +279,6 @@ function Editar() {
     setEmpresas((prev) => prev.filter((_, i) => i !== empresaIndex));
   };
 
-  // EXPERIÊNCIA - Funções dentro de uma Empresa
   const handleChangeFuncao = (empresaIndex, funcaoIndex, e) => {
     const { name, value, type, checked } = e.target;
     setEmpresas((prev) => {
@@ -342,15 +315,11 @@ function Editar() {
     });
   };
 
-  // INFORMAÇÕES ADICIONAIS
   const handleChangeInfoAdc = (e) => {
     const { name, value } = e.target;
     setInformacoesAdc((prev) => ({ ...prev, [name]: value }));
   };
 
-  // -----------------------------
-  // 9. Envio dos Dados: POST (se não existir) ou PUT (se existir)
-  // -----------------------------
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -414,14 +383,10 @@ function Editar() {
     }
   };
 
-  // -----------------------------
-  // 10. Renderização
-  // -----------------------------
   return (
     <div style={{ marginTop: "80px", padding: "20px" }}>
       <h2>Editar Currículo</h2>
-      
-      {/* Seção para alterar a foto de perfil */}
+    
       <section>
         <h4>Foto de Perfil</h4>
         <input type="file" onChange={(e) => setFotoFile(e.target.files[0])} />
@@ -438,7 +403,7 @@ function Editar() {
       </section>
 
       <form onSubmit={handleSubmit}>
-        {/* IDENTIFICAÇÃO */}
+
         <section>
           <h4>Identificação</h4>
           <div>
@@ -455,7 +420,7 @@ function Editar() {
           </div>
         </section>
 
-        {/* ENDEREÇO */}
+    
         <section>
           <h4>Endereço</h4>
           <div>
@@ -484,10 +449,8 @@ function Editar() {
           </div>
         </section>
 
-        {/* FORMAÇÕES */}
         <section>
           <h4>Formações</h4>
-          {/* GRADUAÇÃO */}
           <div>
             <button type="button" onClick={addGraduacao}>Adicionar Graduação</button>
             {graduacoes.map((grad, index) => (
@@ -539,7 +502,6 @@ function Editar() {
             ))}
           </div>
           
-          {/* PÓS-GRADUAÇÃO */}
           <div>
             <button type="button" onClick={addPosgraduacao}>Adicionar Pós-Graduação</button>
             {posgraduacoes.map((pos, index) => (
@@ -601,7 +563,6 @@ function Editar() {
             ))}
           </div>
 
-          {/* TÉCNICO */}
           <div>
             <button type="button" onClick={addTecnico}>Adicionar Curso Técnico</button>
             {tecnicos.map((tec, index) => (
@@ -654,7 +615,6 @@ function Editar() {
           </div>
         </section>
 
-        {/* EXPERIÊNCIA */}
         <section>
           <h4>Experiência</h4>
           <button type="button" onClick={toggleSemExperiencia}>
@@ -758,7 +718,6 @@ function Editar() {
           )}
         </section>
 
-        {/* INFORMAÇÕES ADICIONAIS */}
         <section>
           <h4>Informações Adicionais</h4>
           <div>
@@ -780,7 +739,7 @@ function Editar() {
         </section>
 
         <button type="submit" style={{ marginTop: "20px" }}>
-          {existe ? "Atualizar" : "Criar (POST)"}
+          {existe ? "Atualizar" : "Criar currículo"}
         </button>
       </form>
     </div>

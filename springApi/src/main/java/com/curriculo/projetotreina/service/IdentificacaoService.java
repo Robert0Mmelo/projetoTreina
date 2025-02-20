@@ -33,7 +33,6 @@ public class IdentificacaoService {
        identificacao.setTelefone(identificacaoDetails.getTelefone());
        identificacao.setEndereco(identificacaoDetails.getEndereco());
        identificacao.setWhatsapp(identificacaoDetails.isWhatsapp());
-       identificacao.setFotoPerfil(identificacaoDetails.getFotoPerfil());
        return identificacaoRepository.save(identificacao);
     }
     

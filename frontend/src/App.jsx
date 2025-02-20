@@ -3,11 +3,13 @@ import MyNavBar from "./Components/MyNavBar/NavBar";
 import Home from "./Components/MyHome/Home";
 import Editar from "./Components/MyEditar/Editar";
 import Exibir from "./Components/MyExibir/Exibir";
+import Footer from "./Components/MyFooter/Footer";
 
 
 
 function App() {
   return (
+    <div className="app-container">
     <Router>
       <MyNavBar />
       <Routes>
@@ -16,6 +18,9 @@ function App() {
         <Route path="/exibir" element={<Exibir />} />
       </Routes>
     </Router>
+    <Footer></Footer>
+    </div>
+    
     
   );
 }

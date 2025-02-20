@@ -38,6 +38,4 @@ public class Identificacao {
     @Column(nullable = false)
     private boolean whatsapp;
 
-    @Column(length = 2000)
-    private String fotoPerfil;
 }
