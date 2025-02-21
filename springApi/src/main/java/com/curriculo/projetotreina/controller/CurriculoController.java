@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Optional;
 
-@CrossOrigin(origins = "http://localhost:5174")
+@CrossOrigin(origins = "http://localhost:5176")
 @RestController
 @RequestMapping("/api/curriculo")
 public class CurriculoController {
@@ -46,21 +46,27 @@ public class CurriculoController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Curriculo> updateCurriculo(@PathVariable Integer id, @RequestBody Curriculo updatedCurriculo) {
-        Optional<Curriculo> optional = curriculoRepository.findById(id);
-        if (!optional.isPresent()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Curriculo existing = optional.get();
-        existing.setIdentificacao(updatedCurriculo.getIdentificacao());
-        existing.setEndereco(updatedCurriculo.getEndereco());
-        existing.setFormacoes(updatedCurriculo.getFormacoes());
-        existing.setEmpresas(updatedCurriculo.getEmpresas());
-        existing.setInformacoesAdc(updatedCurriculo.getInformacoesAdc());
-
-        Curriculo saved = curriculoRepository.save(existing);
-        return ResponseEntity.ok(saved);
+    Optional<Curriculo> optional = curriculoRepository.findById(id);
+    if (!optional.isPresent()) {
+        return ResponseEntity.notFound().build();
     }
+
+    Curriculo existing = optional.get();
+    existing.setIdentificacao(updatedCurriculo.getIdentificacao());
+    existing.setEndereco(updatedCurriculo.getEndereco());
+    existing.setFormacoes(updatedCurriculo.getFormacoes());
+   
+    existing.getEmpresas().clear();
+    if (updatedCurriculo.getEmpresas() != null) {
+        existing.getEmpresas().addAll(updatedCurriculo.getEmpresas());
+    }
+    
+    existing.setInformacoesAdc(updatedCurriculo.getInformacoesAdc());
+    
+    Curriculo saved = curriculoRepository.save(existing);
+    return ResponseEntity.ok(saved);
+}
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCurriculo(@PathVariable Integer id) {

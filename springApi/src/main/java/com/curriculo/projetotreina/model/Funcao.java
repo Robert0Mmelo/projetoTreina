@@ -29,14 +29,14 @@ public class Funcao {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false, length = 70)
+    @Column(nullable = true, length = 70)
     private String nome;
 
    @Temporal(TemporalType.DATE)
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Date inicio;
 
-    @Column( nullable = false, length = 30)
+    @Column( nullable = true, length = 30)
     private String fim;
 
     @ManyToOne

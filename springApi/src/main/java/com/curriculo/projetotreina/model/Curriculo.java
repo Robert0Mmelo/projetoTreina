@@ -22,19 +22,19 @@ public class Curriculo {
     @JoinColumn(name = "identificacao_id", referencedColumnName = "id")
     private Identificacao identificacao;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "endereco_id", referencedColumnName = "id")
     private Endereco endereco;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "formacoes_id", referencedColumnName = "id")
     private Formacoes formacoes;
 
-    @OneToMany(cascade = CascadeType.ALL)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "curriculo_id") 
     private List<Empresa> empresas;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "informacoesadc_id", referencedColumnName = "id")
     private InformacoesAdc informacoesAdc;
 }

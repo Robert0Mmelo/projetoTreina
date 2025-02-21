@@ -29,7 +29,7 @@ public class Empresa {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false, length = 70)
+    @Column(nullable = true, length = 70)
     private String nome;
 
     @Temporal(TemporalType.DATE)
