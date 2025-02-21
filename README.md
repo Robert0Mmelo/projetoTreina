@@ -62,7 +62,7 @@ npm install
 ```bash
 npm run dev 
 ```
-3. Acesse `http://localhost:5176`
+3. Acesse `http://localhost:5176` (Confirmar se esse é realmente o local host, se não, só mudar nos controllers e no viacepService)
 
 
 
