@@ -46,7 +46,7 @@ mvnw spring-boot:run
 ## 🎨 Frontend (pasta `frontend`)
 
 ### 🖼️ Print de Tela
-
+![Print do Sistema](Print%20exemplo.png)
 
 ### ✅ Pré-requisitos
 - Node.js 18+
