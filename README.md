@@ -16,8 +16,8 @@ Este projeto consiste em um sistema que permite o cadastro, edição e exibiçã
 A API foi desenvolvida utilizando o framework Spring Boot e gerencia todas as operações CRUD do sistema. Ela lida com autenticação, armazenamento de dados no banco MySQL e upload de imagens.
 
 ### ✅ Pré-requisitos
-- Java 17+
-- Maven 3+
+- Java 17
+- Maven 3
 - MySQL Server
 
 ### 📥 Como baixar o projeto
@@ -49,7 +49,7 @@ mvnw spring-boot:run
 ![Print do Sistema](Print%20exemplo.png)
 
 ### ✅ Pré-requisitos
-- Node.js 18+
+- Node.js 
 
 
 ### ▶️ Como rodar o projeto
