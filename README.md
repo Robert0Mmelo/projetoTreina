@@ -70,7 +70,7 @@ npm run dev
 
 ## 🛠️ Tecnologias Utilizadas
 - **Backend:** Java, Spring Boot, MySQL, Maven
-- **Frontend:** React, Vite, Axios, Bootstrap
-- **Outras:** Docker (opcional), Git
+- **Frontend:** React, Axios, Bootstrap
+- **Outras:** Git
 
 💡 Desenvolvido por **Roberto Mateus** 
