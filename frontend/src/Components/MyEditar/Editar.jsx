@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-// Função auxiliar para remover a propriedade id se for nula ou indefinida
+
 const cleanObject = (obj) => {
   const newObj = { ...obj };
   if (newObj.id == null) {
@@ -116,7 +116,7 @@ function Editar() {
     formData.append("file", fotoFile);
     try {
       const response = await axios.post("http://localhost:8080/api/images/upload", formData);
-      const imageUrl = response.data.url;
+      const imageUrl = response.data;
       const parts = imageUrl.split("/");
       const newImageId = parts[parts.length - 1];
       window.localStorage.setItem("avatarImageId", newImageId);
@@ -127,6 +127,7 @@ function Editar() {
       alert("Erro ao enviar foto.");
     }
   };
+  
 
   const handleChangeEndereco = (e) => {
     const { name, value } = e.target;
@@ -150,7 +151,7 @@ function Editar() {
       .catch((err) => console.error("Erro ao buscar CEP:", err));
   };
 
-  // Graduações
+
   const addGraduacao = () => {
     setGraduacoes((prev) => [
       ...prev,
@@ -202,7 +203,6 @@ function Editar() {
     setPosgraduacoes((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Cursos Técnicos
   const addTecnico = () => {
     setTecnicos((prev) => [
       ...prev,
@@ -228,7 +228,7 @@ function Editar() {
     setTecnicos((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Experiência – empresas e funções
+
   const toggleSemExperiencia = () => {
     setSemExperiencia((prev) => !prev);
     if (!semExperiencia) {
@@ -299,23 +299,19 @@ function Editar() {
     });
   };
 
-  // Informações Adicionais
   const handleChangeInfoAdc = (e) => {
     const { name, value } = e.target;
     setInformacoesAdc((prev) => ({ ...prev, [name]: value }));
   };
 
-  // SUBMIT – monta o payload e envia para o endpoint /api/curriculo
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Se já existir informacoesAdc com id, preserva o id
     const updatedInformacoesAdc = { ...informacoesAdc };
     if (curriculoCompleto?.informacoesAdc?.id) {
       updatedInformacoesAdc.id = curriculoCompleto.informacoesAdc.id;
     }
 
-    // Monta payload para formacoes; se os arrays estiverem vazios, envia null
     let formacoesPayload = { graduacoes, posgraduacoes, tecnicos };
     if (graduacoes.length === 0 && posgraduacoes.length === 0 && tecnicos.length === 0) {
       formacoesPayload = null;
@@ -334,19 +330,16 @@ function Editar() {
       informacoesAdc: updatedInformacoesAdc,
     };
 
-    // Filtra empresas sem nome
     payload.empresas = (payload.empresas || []).filter(
       (empresa) => empresa.nome.trim() !== ""
     );
 
-    // Para cada empresa, limpa o objeto e as funções
     payload.empresas = payload.empresas.map((empresa) => {
       const cleanedEmpresa = cleanObject(empresa);
       cleanedEmpresa.funcoes = (cleanedEmpresa.funcoes || [])
         .filter((funcao) => funcao.nome && funcao.inicio && funcao.fim)
         .map((funcao) => {
           const cleanedFuncao = cleanObject(funcao);
-          // Se a empresa já tem id, associa a função; caso contrário, não insere a propriedade "empresa"
           if (cleanedEmpresa.id) {
             cleanedFuncao.empresa = { id: cleanedEmpresa.id };
           }
@@ -410,7 +403,6 @@ function Editar() {
       </section>
 
       <form onSubmit={handleSubmit}>
-        {/* Identificação */}
         <section>
           <h4>Identificação</h4>
           <div>
@@ -442,7 +434,6 @@ function Editar() {
           </div>
         </section>
 
-        {/* Endereço */}
         <section>
           <h4>Endereço</h4>
           <div>
@@ -502,7 +493,6 @@ function Editar() {
           </div>
         </section>
 
-        {/* Formações */}
         <section>
           <h4>Formações</h4>
           <div>
@@ -715,7 +705,6 @@ function Editar() {
           </div>
         </section>
 
-        {/* Experiência (Empresas e Funções) */}
         <section>
           <h4>Experiência</h4>
           <button type="button" onClick={toggleSemExperiencia}>
@@ -830,7 +819,6 @@ function Editar() {
           )}
         </section>
 
-        {/* Informações Adicionais */}
         <section>
           <h4>Informações Adicionais</h4>
           <div>

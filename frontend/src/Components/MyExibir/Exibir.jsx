@@ -9,12 +9,10 @@ function Exibir() {
   const [avatarUrl, setAvatarUrl] = useState(defaultAvatar);
   const [refresh, setRefresh] = useState(window.localStorage.getItem("avatarRefresh") || 0);
 
-  // Carrega os dados do currículo (ID=1)
   useEffect(() => {
     axios.get('http://localhost:8080/api/curriculo/1')
       .then(response => {
         const data = response.data;
-        // Converte as datas para objetos Date, se necessário
         if (data.formacoes) {
           data.formacoes.graduacoes = (data.formacoes.graduacoes || []).map(g => ({
             ...g,
@@ -46,7 +44,6 @@ function Exibir() {
       });
   }, []);
 
-  // Carrega o avatar usando o ID salvo no localStorage (ignora fotoPerfil)
   useEffect(() => {
     const imageId = window.localStorage.getItem("avatarImageId") || "1";
     axios.get(`http://localhost:8080/api/images/${imageId}?t=${refresh}`, { responseType: 'blob' })
@@ -60,7 +57,6 @@ function Exibir() {
       });
   }, [refresh]);
 
-  // Atualiza o refresh se a chave "avatarRefresh" mudar
   useEffect(() => {
     const handleStorageChange = (event) => {
       if (event.key === "avatarRefresh") {
@@ -79,12 +75,10 @@ function Exibir() {
     return <div>Carregando currículo...</div>;
   }
 
-  // Caso o objeto informacoesAdc não exista, usamos um objeto vazio para evitar erros
   const { identificacao, endereco, formacoes, empresas, informacoesAdc = {} } = curriculo;
 
   return (
     <div className="container mt-5" style={{ fontFamily: 'Arial, sans-serif' }}>
-      {/* CSS para esconder a navbar na impressão */}
       <style>
         {`
           @media print {
@@ -98,7 +92,6 @@ function Exibir() {
       <div className="card shadow">
         <div className="card-body">
           <div className="row">
-            {/* Coluna do perfil */}
             <div className="col-md-4 text-center border-right">
               <img 
                 src={avatarUrl} 
@@ -147,7 +140,6 @@ function Exibir() {
               </div>
             </div>
 
-            {/* Coluna de formações e experiência */}
             <div className="col-md-8">
               <h4 className="mb-3">Formações</h4>
               {formacoes && (

@@ -45,7 +45,7 @@ public class CurriculoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Curriculo> updateCurriculo(@PathVariable Integer id, @RequestBody Curriculo updatedCurriculo) {
+public ResponseEntity<Curriculo> updateCurriculo(@PathVariable Integer id, @RequestBody Curriculo updatedCurriculo) {
     Optional<Curriculo> optional = curriculoRepository.findById(id);
     if (!optional.isPresent()) {
         return ResponseEntity.notFound().build();
@@ -55,18 +55,26 @@ public class CurriculoController {
     existing.setIdentificacao(updatedCurriculo.getIdentificacao());
     existing.setEndereco(updatedCurriculo.getEndereco());
     existing.setFormacoes(updatedCurriculo.getFormacoes());
-   
+    
     existing.getEmpresas().clear();
     if (updatedCurriculo.getEmpresas() != null) {
         existing.getEmpresas().addAll(updatedCurriculo.getEmpresas());
     }
     
-    existing.setInformacoesAdc(updatedCurriculo.getInformacoesAdc());
+    if (updatedCurriculo.getInformacoesAdc() != null) {
+        if (existing.getInformacoesAdc() == null) {
+            existing.setInformacoesAdc(updatedCurriculo.getInformacoesAdc());
+        } else {
+            existing.getInformacoesAdc().setEmail(updatedCurriculo.getInformacoesAdc().getEmail());
+            existing.getInformacoesAdc().setLinkedin(updatedCurriculo.getInformacoesAdc().getLinkedin());
+            existing.getInformacoesAdc().setGithub(updatedCurriculo.getInformacoesAdc().getGithub());
+            existing.getInformacoesAdc().setInstagram(updatedCurriculo.getInformacoesAdc().getInstagram());
+        }
+    }
     
     Curriculo saved = curriculoRepository.save(existing);
     return ResponseEntity.ok(saved);
 }
-
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCurriculo(@PathVariable Integer id) {
